@@ -1,0 +1,4 @@
+import{test}from'node:test';import assert from'node:assert/strict';
+import{sample,risk}from'../src/core.js';import{summaryFacts,composeBriefing}from'../src/briefing.js';
+test('every AI choice uses only the complete supplied facts',()=>{const d=sample('JFK'),f=d.flights[0],r=risk(f,d.weather,d.flights),facts=summaryFacts(d,r);for(const choice of ['A','B','C']){const text=composeBriefing(f,d,r,choice);assert.ok(text.startsWith(f.callsign+' — '+facts[choice]));for(const fact of Object.values(facts))assert.ok(text.includes(fact));assert.ok(text.includes('simulated'));}assert.throws(()=>composeBriefing(f,d,r,'Invent new weather'));});
+test('unknown gust and ceiling remain unknown',()=>{const d=sample('JFK');d.weather.gust=null;d.weather.ceiling=null;const facts=summaryFacts(d,{nearby:0});assert.match(facts.A,/gust not reported/);assert.match(facts.A,/no ceiling reported/);assert.match(facts.B,/0 observed/);});

@@ -1,4 +1,5 @@
 import {risk} from './core.js';
+import {summaryFacts,composeBriefing} from './briefing.js';
 import {aiErrorMessage} from './ai-format.js';
 let worker=null,ready=false,loading=null,generating=false,sequence=0;
 const pending=new Map();
@@ -36,12 +37,12 @@ export async function summarize(f,d){
  if(generating)throw Error('AI is finishing another request');
  generating=true;
  const baseline=risk(f,d.weather,d.flights);
- const facts=`Surface wind ${d.weather.windSpeed} knots, gust ${d.weather.gust??'not reported'}, visibility ${d.weather.visibility} miles, ceiling ${d.weather.ceiling??'not reported'} feet. ${baseline.nearby} aircraft below 10,000 feet in the sector. These are ${d.aircraftSource} observations. Surface weather does not establish en-route turbulence or runway queues.`;
+ const facts=summaryFacts(d,baseline);
  try{
-  const text=await request('generate',{messages:[
-   {role:'system',content:'Summarize only the supplied facts in two short sentences. Do not invent conditions, forecasts, probabilities, or flight instructions.'},
-   {role:'user',content:facts}
+  const choice=await request('generate',{messages:[
+   {role:'system',content:'Select which supplied observation should lead a short briefing. Reply with exactly A for weather, B for traffic density, or C for uncertainty. Choose only from the supplied facts.'},
+   {role:'user',content:`A: ${facts.A} Weather index ${baseline.weather}/100. B: ${facts.B} Traffic index ${baseline.congestion}/100. C: ${facts.C}`}
   ]});
-  return {text:`${f.callsign} — ${text}\n\nObserved inputs: ${facts}\nScores are rule-based screening indices, not AI probabilities. Verify official weather and ATC advisories before operational decisions.`,source:'Local AI · SmolLM2 · CPU',risk:baseline};
+  return {text:composeBriefing(f,d,baseline,choice),source:'Local AI · SmolLM2 · CPU',risk:baseline};
  }finally{generating=false;}
 }

@@ -16,7 +16,7 @@ No `npm install` is needed. The build only copies static assets. The hosted Reac
 
 Click **Enable free AI**, then **Generate with AI** on a selected flight. Transformers.js 3.8.1 runs **SmolLM2-135M-Instruct** with q8 weights in a dedicated, single-threaded WebAssembly worker. It uses the CPU and does not request WebGPU. The first use downloads approximately 137 MB of model weights plus runtime/tokenizer assets, cached when the browser permits. There is no API key, account requirement or per-token service bill.
 
-AI generates an English summary of the supplied observations. The original observed facts remain visible alongside it, and risk scores remain clearly labeled rule-based screening indices. Download failures, empty output, and timeouts preserve the rule-based briefing. Stop AI terminates the worker and releases its memory.
+The LLM prioritizes the supplied observations using constrained A/B/C decoding. The app assembles the English briefing exclusively from those observed facts, preventing invented weather, headings or traffic figures. Risk scores remain clearly labeled rule-based screening indices. Download failures, empty output, and timeouts preserve the rule-based briefing. Stop AI terminates the worker and releases its memory.
 
 ## Live observations and GitHub Pages limitations
 
@@ -70,7 +70,7 @@ Open http://localhost:8000. `npm run refresh` attempts upstream feeds and writes
 
 ## Method and limits
 
-Turbulence baseline: 12 + 3×surface gust spread +35 for TS/CB +12 below 10,000 ft. Traffic proxy: 15 +3×sector aircraft below 10,000 ft. Weather baseline: 12 +40 for visibility below 3 SM, or +22 below 5 SM; +30 for ceiling below 1,000 ft; +30 for TS/CB; +15 for wind over 20 kt. Cap at 100. The optional local AI summarizes these inputs; it does not replace the heuristic scores.
+Turbulence baseline: 12 + 3×surface gust spread +35 for TS/CB +12 below 10,000 ft. Traffic proxy: 15 +3×sector aircraft below 10,000 ft. Weather baseline: 12 +40 for visibility below 3 SM, or +22 below 5 SM; +30 for ceiling below 1,000 ft; +30 for TS/CB; +15 for wind over 20 kt. Cap at 100. The optional local AI prioritizes these inputs; it does not replace the heuristic scores.
 
 METAR cannot determine en-route turbulence, runway queues, exact delays or safe flight paths. ADS-B sector density is not a runway queue. This prototype does not use TAF/SIGMET/PIREP/ATC restrictions or validated predictive models. Not for navigation or operational decisions.
 
