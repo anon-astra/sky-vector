@@ -4,7 +4,7 @@ on:
     branches: [main]
   workflow_dispatch:
   schedule:
-    - cron: '7,22,37,52 * * * *'
+    - cron: '*/5 * * * *'
 permissions:
   contents: read
   pages: write
@@ -45,24 +45,18 @@ jobs:
         id: deployment
         uses: actions/deploy-pages@v4
 
-      - name: Verify public live proxy
+      - name: Verify published aircraft and weather
         if: github.event_name != 'schedule'
         run: |
           node --input-type=module <<'JS'
-          for (const host of ['api.adsb.lol','api.airplanes.live']) {
-            try {
-              const r = await fetch('https://'+host+'/v2/point/40.6413/-73.7781/80',{headers:{'User-Agent':'Skyvector/1.0 (+https://github.com/anon-astra/sky-vector)',Origin:'https://anon-astra.github.io'},signal:AbortSignal.timeout(15000)});
-              const text=await r.text();let d={};try{d=JSON.parse(text)}catch{}
-              console.log(JSON.stringify({host,status:r.status,cors:r.headers.get('access-control-allow-origin'),count:d.ac?.length,now:d.now,error:r.ok?null:text.slice(0,300)}));
-            } catch(e){console.log(host,e.message)}
-          }
-          const r = await fetch('https://skyvector-airspace.anon69f.chatgpt.site/api/live?hub=JFK', {
-            headers: { Origin: 'https://anon-astra.github.io' },
-            signal: AbortSignal.timeout(25000)
-          });
-          if (!r.ok) throw Error('Proxy HTTP ' + r.status);
-          if (r.headers.get('access-control-allow-origin') !== 'https://anon-astra.github.io') throw Error('Missing CORS permission');
-          const d = await r.json();
-          console.log(JSON.stringify({ hub: d.hub, aircraftSource: d.aircraftSource, weatherSource: d.weatherSource, aircraftCount: d.flights?.length, observationAgeSeconds: (Date.now()-d.aircraftObservedAt)/1000, issues: d.issues }));
-          if (d.aircraftSource !== 'live' || Date.now()-d.aircraftObservedAt > 180000) throw Error('Live aircraft source unavailable or stale');
+          const base='https://anon-astra.github.io/sky-vector/';
+          const r=await fetch(base+'data/airspace.json?verify='+Date.now(),{signal:AbortSignal.timeout(25000)});
+          if(!r.ok)throw Error('Published observations HTTP '+r.status);
+          const d=await r.json(),s=d.sectors?.JFK;
+          if(Object.keys(d.sectors||{}).length!==21)throw Error('Expected all 21 sectors');
+          if(s?.aircraftSource==='demo'||!s?.flights?.length||Date.now()-s.aircraftObservedAt>2700000)throw Error('Real JFK aircraft unavailable');
+          if(s.weatherSource==='demo'||Date.now()-s.weather.observedAt>7200000)throw Error('Current JFK weather unavailable');
+          const app=await (await fetch(base+'src/data.js?verify='+Date.now())).text();
+          if(app.includes('/api/live'))throw Error('Outdated blocking proxy client still deployed');
+          console.log(JSON.stringify({sectors:Object.keys(d.sectors).length,aircraftCount:s.flights.length,aircraftAgeSeconds:(Date.now()-s.aircraftObservedAt)/1000,weather:s.weather.raw,source:s.aircraftSource}));
           JS
