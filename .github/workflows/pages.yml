@@ -36,7 +36,7 @@ jobs:
   deploy:
     needs: build
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 12
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
@@ -60,3 +60,17 @@ jobs:
           if(app.includes('/api/live'))throw Error('Outdated blocking proxy client still deployed');
           console.log(JSON.stringify({sectors:Object.keys(d.sectors).length,aircraftCount:s.flights.length,aircraftAgeSeconds:(Date.now()-s.aircraftObservedAt)/1000,weather:s.weather.raw,source:s.aircraftSource}));
           JS
+      - uses: actions/checkout@v4
+        if: github.event_name != 'schedule'
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        if: github.event_name != 'schedule'
+        with:
+          node-version: '22'
+      - name: Verify CPU AI without WebGPU
+        if: github.event_name != 'schedule'
+        run: |
+          npm install --no-save --package-lock=false playwright@1.55.1
+          npx playwright install chromium
+          node scripts/test-cpu-ai.mjs

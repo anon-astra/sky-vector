@@ -14,9 +14,9 @@ No `npm install` is needed. The build only copies static assets. The hosted Reac
 
 ## Free AI
 
-Click **Enable free AI**, then **Generate with AI** on a selected flight. WebLLM 0.2.85 runs **Llama 3.2 1B Instruct** in a dedicated browser worker. It downloads a large model the first time and requires WebGPU and approximately 1.2 GB GPU memory. The download is cached when the browser permits. There is no API key, account requirement or per-token service bill. Data download, device resources and electricity still apply. Mobile/in-app browsers may not support it; a supported desktop Chrome/Edge browser is the best starting point.
+Click **Enable free AI**, then **Generate with AI** on a selected flight. Transformers.js 3.8.1 runs **SmolLM2-135M-Instruct** with q8 weights in a dedicated, single-threaded WebAssembly worker. It uses the CPU and does not request WebGPU. The first use downloads approximately 137 MB of model weights plus runtime/tokenizer assets, cached when the browser permits. There is no API key, account requirement or per-token service bill.
 
-The app validates the model's JSON and 1–100 score ranges. Missing WebGPU, model download failures, invalid output and timeouts leave clearly labeled rule-based briefings available. Cancellation stops the worker. The model is not automatically downloaded or invoked on each refresh. Its small size limits reasoning quality; all scores are unvalidated screening indices, never probabilities.
+AI generates an English summary of the supplied observations. The original observed facts remain visible alongside it, and risk scores remain clearly labeled rule-based screening indices. Download failures, empty output, and timeouts preserve the rule-based briefing. Stop AI terminates the worker and releases its memory.
 
 ## Live observations and GitHub Pages limitations
 
@@ -70,7 +70,7 @@ Open http://localhost:8000. `npm run refresh` attempts upstream feeds and writes
 
 ## Method and limits
 
-Turbulence baseline: 12 + 3×surface gust spread +35 for TS/CB +12 below 10,000 ft. Traffic proxy: 15 +3×sector aircraft below 10,000 ft. Weather baseline: 12 +40 for visibility below 3 SM, or +22 below 5 SM; +30 for ceiling below 1,000 ft; +30 for TS/CB; +15 for wind over 20 kt. Cap at 100. The optional local AI returns its own labeled screening indices using these inputs.
+Turbulence baseline: 12 + 3×surface gust spread +35 for TS/CB +12 below 10,000 ft. Traffic proxy: 15 +3×sector aircraft below 10,000 ft. Weather baseline: 12 +40 for visibility below 3 SM, or +22 below 5 SM; +30 for ceiling below 1,000 ft; +30 for TS/CB; +15 for wind over 20 kt. Cap at 100. The optional local AI summarizes these inputs; it does not replace the heuristic scores.
 
 METAR cannot determine en-route turbulence, runway queues, exact delays or safe flight paths. ADS-B sector density is not a runway queue. This prototype does not use TAF/SIGMET/PIREP/ATC restrictions or validated predictive models. Not for navigation or operational decisions.
 
@@ -79,10 +79,10 @@ METAR cannot determine en-route turbulence, runway queues, exact delays or safe 
 - Ranking: https://aci.aero/resources/busiest-airports-in-the-world/
 - Aircraft API: https://openskynetwork.github.io/opensky-api/rest.html
 - METAR API: https://aviationweather.gov/data/api/
-- WebLLM: https://webllm.mlc.ai/docs/user/get_started.html
+- Transformers.js: https://huggingface.co/docs/transformers.js
 - GitHub Pages: https://docs.github.com/en/pages/getting-started-with-github-pages/what-is-github-pages
 - Scheduled Actions: https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#schedule
 
 ## Verification
 
-Eight automated checks cover airport coverage, sector positioning, units, empty live sectors, independent expiry, METAR ceilings, score bounds and AI output validation. JavaScript syntax and static packaging are checked. Actual local-model inference requires a WebGPU device and model download and has not been exercised in the build environment.
+Automated checks cover airport coverage, positioning, units, independent expiry, METAR ceilings, score bounds, and worker error reporting. Non-scheduled deployments also run Chromium with GPU disabled, download the actual CPU model, generate a briefing, and check the stop/retry controls.
