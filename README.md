@@ -16,7 +16,7 @@ No `npm install` is needed. The build only copies static assets. The hosted Reac
 
 Click **Enable free AI**, then **Generate with AI** on a selected flight. Transformers.js 3.8.1 runs **SmolLM2-135M-Instruct** with q8 weights in a dedicated, single-threaded WebAssembly worker. It uses the CPU and does not request WebGPU. The first use downloads approximately 137 MB of model weights plus runtime/tokenizer assets, cached when the browser permits. There is no API key, account requirement or per-token service bill.
 
-The LLM prioritizes the supplied observations using constrained A/B/C decoding. The app assembles the English briefing exclusively from those observed facts, preventing invented weather, headings or traffic figures. Risk scores remain clearly labeled rule-based screening indices. Download failures, empty output, and timeouts preserve the rule-based briefing. Stop AI terminates the worker and releases its memory.
+Briefings explain weather flags, traffic-score drivers, selected-flight altitude/trend relevance, tailored next checks and data age. This analysis appears immediately without a model download. The optional LLM prioritizes the supplied observations using constrained A/B/C decoding. The app assembles the English briefing exclusively from those observed facts, preventing invented weather, headings or traffic figures. Risk scores remain clearly labeled rule-based screening indices. Download failures, empty output, and timeouts preserve the rule-based briefing. Stop AI terminates the worker and releases its memory.
 
 ## Live observations and GitHub Pages limitations
 

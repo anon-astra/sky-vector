@@ -11,7 +11,9 @@ try{
  await page.waitForFunction(()=>document.querySelector('.ai-controls p')?.textContent.includes('CPU AI is ready'),{},{timeout:480000});
  await page.getByRole('button',{name:'Generate with AI',exact:true}).click();
  await page.waitForFunction(()=>document.querySelector('.briefing .source')?.textContent.includes('Local AI · SmolLM2 · CPU'),{},{timeout:180000});
- console.log('CPU AI GENERATED:',await page.locator('.briefing p').innerText());
+ const briefing=await page.locator('.briefing p').innerText();
+ if(!briefing.includes('Flight relevance:')||!briefing.includes('Next checks')||!briefing.includes('Data confidence'))throw Error('Missing contextual briefing sections');
+ console.log('CPU AI GENERATED:',briefing);
  await page.getByRole('button',{name:'Stop AI',exact:true}).click();
  await page.getByRole('button',{name:'Enable free AI',exact:true}).waitFor();
  console.log('CPU model load, actual generation, and stop/retry UI passed');

@@ -37,10 +37,10 @@ export async function summarize(f,d){
  if(generating)throw Error('AI is finishing another request');
  generating=true;
  const baseline=risk(f,d.weather,d.flights);
- const facts=summaryFacts(d,baseline);
+ const facts=summaryFacts(d,baseline,f);
  try{
   const choice=await request('generate',{messages:[
-   {role:'system',content:'Select which supplied observation should lead a short briefing. Reply with exactly A for weather, B for traffic density, or C for uncertainty. Choose only from the supplied facts.'},
+   {role:'system',content:'Select which supplied observation should lead a short briefing. Reply with exactly A for weather, B for traffic density, or C for flight-specific relevance. Choose only from the supplied facts.'},
    {role:'user',content:`A: ${facts.A} Weather index ${baseline.weather}/100. B: ${facts.B} Traffic index ${baseline.congestion}/100. C: ${facts.C}`}
   ]});
   return {text:composeBriefing(f,d,baseline,choice),source:'Local AI · SmolLM2 · CPU',risk:baseline};
