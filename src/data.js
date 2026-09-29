@@ -1,23 +1,27 @@
-import {hubs} from './airports.js';
-import {sample,normalizeStates,acceptSnapshot} from './core.js';
+import {sample,acceptSnapshot} from './core.js';
 let snapshotPromise=null,snapshotAt=0,retryAfter=0,lastFailure='';
 async function snapshots(){if(!snapshotPromise||Date.now()-snapshotAt>60000){snapshotAt=Date.now();snapshotPromise=fetch(new URL('../data/airspace.json',import.meta.url),{cache:'no-store',signal:AbortSignal.timeout(7000)}).then(r=>{if(!r.ok)throw Error('No published observations');return r.json()}).catch(()=>null);}return snapshotPromise;}
 export async function loadSector(hub,mode){
  if(mode==='demo')return sample(hub);
- const h=hubs[hub],all=await snapshots(),d=acceptSnapshot(all?.sectors?.[hub],hub);
+ const all=await snapshots(),d=acceptSnapshot(all?.sectors?.[hub],hub);
  if(Date.now()>=retryAfter){
-  let delay=120000;
   try{
-   const q=new URLSearchParams({lamin:h.lat-.7,lamax:h.lat+.7,lomin:h.lon-1,lomax:h.lon+1});
-   const r=await fetch('https://opensky-network.org/api/states/all?'+q,{signal:AbortSignal.timeout(8000)});
-   if(!r.ok){
-    if(r.status===429){const seconds=Number(r.headers.get('X-Rate-Limit-Retry-After-Seconds'));delay=Math.max(600,Number.isFinite(seconds)?seconds:600)*1000;}
-    throw Error('OpenSky returned HTTP '+r.status+(r.status===429?' (rate limit)':''));
+   const endpoint='https://skyvector-airspace.anon69f.chatgpt.site/api/live?hub='+encodeURIComponent(hub);
+   const r=await fetch(endpoint,{mode:'cors',credentials:'omit',signal:AbortSignal.timeout(16000)});
+   if(!r.ok)throw Error('Aircraft proxy returned HTTP '+r.status);
+   if(!r.headers.get('Content-Type')?.includes('application/json'))throw Error('Aircraft proxy requires public access');
+   const live=await r.json();
+   if(live.hub!==hub)throw Error('Wrong sector returned by proxy');
+   if(live.weatherSource==='live'&&live.weather?.observedAt&&Date.now()-live.weather.observedAt<7200000){d.weather=live.weather;d.weatherSource='live';}
+   if(live.aircraftSource==='live'&&Array.isArray(live.flights)&&Number.isFinite(live.aircraftObservedAt)&&Date.now()-live.aircraftObservedAt<180000){
+    d.flights=live.flights;d.aircraftSource='live';d.aircraftObservedAt=live.aircraftObservedAt;retryAfter=0;lastFailure='';
+   }else{
+    retryAfter=Date.now()+Math.max(60,Number(live.retryAfterSeconds)||60)*1000;
+    lastFailure=live.issues?.filter(x=>x.startsWith('OpenSky')).join('; ')||'No current aircraft observations from the source';
    }
-   const raw=await r.json();d.flights=normalizeStates(raw,hub);d.aircraftSource='live';d.aircraftObservedAt=raw.time*1000;retryAfter=0;lastFailure='';
   }catch(e){
-   retryAfter=Date.now()+delay;
-   lastFailure=e.name==='TimeoutError'?'Live request timed out':e instanceof TypeError?'Browser could not reach OpenSky (network or CORS; exact cause unavailable)':e.message;
+   retryAfter=Date.now()+120000;
+   lastFailure=e.name==='TimeoutError'?'Live proxy request timed out':e instanceof TypeError?'Live proxy is unreachable or not publicly accessible':e.message;
   }
  }
  if(d.aircraftSource==='snapshot'){
