@@ -20,7 +20,7 @@ The app validates the model's JSON and 1–100 score ranges. Missing WebGPU, mod
 
 ## Live observations and GitHub Pages limitations
 
-Pages serves files and cannot run FastAPI or hide API keys. The app first tries OpenSky's anonymous live API for the selected sector. Browser CORS, quota and network failures fall back to the most recent published observation snapshot, then to clearly labeled demo data.
+Pages serves files and cannot run FastAPI or hide API keys. The app requests live aircraft and METARs through its public hosted proxy. The proxy uses ADSB.lol (ODbL 1.0, https://www.adsb.lol/docs/open-data/api/) with OpenSky as an independent fallback, caches each sector for 60 seconds, and permits CORS for this GitHub Pages origin. Browser CORS, quota and network failures fall back to the most recent published observation snapshot, then to clearly labeled demo data.
 
 The Actions workflow fetches one global OpenSky response and a batch of all 21 METAR stations every **15 minutes** (minutes 7, 22, 37, 52), filters aircraft by sector and deploys the new static snapshot. One global call uses 4 OpenSky credits: 96 scheduled runs/day would consume 384, before manual runs, retries or shared-IP usage. Anonymous access can still be unavailable/rate-limited. Optional `OPENSKY_CLIENT_ID` and `OPENSKY_CLIENT_SECRET` repository secrets enable OAuth; no secrets enter the page or JSON. Schedules can be delayed; this is not guaranteed real-time tracking. GitHub may disable schedules in public repositories after 60 days without activity. Failed upstream requests are visible as independent simulation fallbacks.
 

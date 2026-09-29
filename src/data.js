@@ -7,17 +7,17 @@ export async function loadSector(hub,mode){
  if(Date.now()>=retryAfter){
   try{
    const endpoint='https://skyvector-airspace.anon69f.chatgpt.site/api/live?hub='+encodeURIComponent(hub);
-   const r=await fetch(endpoint,{mode:'cors',credentials:'omit',signal:AbortSignal.timeout(16000)});
+   const r=await fetch(endpoint,{mode:'cors',credentials:'omit',signal:AbortSignal.timeout(25000)});
    if(!r.ok)throw Error('Aircraft proxy returned HTTP '+r.status);
    if(!r.headers.get('Content-Type')?.includes('application/json'))throw Error('Aircraft proxy requires public access');
    const live=await r.json();
    if(live.hub!==hub)throw Error('Wrong sector returned by proxy');
    if(live.weatherSource==='live'&&live.weather?.observedAt&&Date.now()-live.weather.observedAt<7200000){d.weather=live.weather;d.weatherSource='live';}
    if(live.aircraftSource==='live'&&Array.isArray(live.flights)&&Number.isFinite(live.aircraftObservedAt)&&Date.now()-live.aircraftObservedAt<180000){
-    d.flights=live.flights;d.aircraftSource='live';d.aircraftObservedAt=live.aircraftObservedAt;retryAfter=0;lastFailure='';
+    d.flights=live.flights;d.aircraftSource='live';d.aircraftProvider=live.aircraftProvider||'ADS-B';d.aircraftObservedAt=live.aircraftObservedAt;retryAfter=0;lastFailure='';
    }else{
     retryAfter=Date.now()+Math.max(60,Number(live.retryAfterSeconds)||60)*1000;
-    lastFailure=live.issues?.filter(x=>x.startsWith('OpenSky')).join('; ')||'No current aircraft observations from the source';
+    lastFailure=live.issues?.filter(x=>/^(OpenSky|ADSB)/.test(x)).join('; ')||'No current aircraft observations from the source';
    }
   }catch(e){
    retryAfter=Date.now()+120000;
