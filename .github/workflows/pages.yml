@@ -49,6 +49,13 @@ jobs:
         if: github.event_name != 'schedule'
         run: |
           node --input-type=module <<'JS'
+          for (const host of ['api.adsb.lol','api.airplanes.live']) {
+            try {
+              const r = await fetch('https://'+host+'/v2/point/40.6413/-73.7781/80',{headers:{'User-Agent':'Skyvector/1.0 (+https://github.com/anon-astra/sky-vector)',Origin:'https://anon-astra.github.io'},signal:AbortSignal.timeout(15000)});
+              const text=await r.text();let d={};try{d=JSON.parse(text)}catch{}
+              console.log(JSON.stringify({host,status:r.status,cors:r.headers.get('access-control-allow-origin'),count:d.ac?.length,now:d.now,error:r.ok?null:text.slice(0,300)}));
+            } catch(e){console.log(host,e.message)}
+          }
           const r = await fetch('https://skyvector-airspace.anon69f.chatgpt.site/api/live?hub=JFK', {
             headers: { Origin: 'https://anon-astra.github.io' },
             signal: AbortSignal.timeout(25000)
