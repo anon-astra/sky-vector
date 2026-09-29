@@ -44,3 +44,18 @@ jobs:
       - name: Deploy GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+
+      - name: Verify public live proxy
+        if: github.event_name != 'schedule'
+        run: |
+          node --input-type=module <<'JS'
+          const r = await fetch('https://skyvector-airspace.anon69f.chatgpt.site/api/live?hub=JFK', {
+            headers: { Origin: 'https://anon-astra.github.io' },
+            signal: AbortSignal.timeout(25000)
+          });
+          if (!r.ok) throw Error('Proxy HTTP ' + r.status);
+          if (r.headers.get('access-control-allow-origin') !== 'https://anon-astra.github.io') throw Error('Missing CORS permission');
+          const d = await r.json();
+          console.log(JSON.stringify({ hub: d.hub, aircraftSource: d.aircraftSource, weatherSource: d.weatherSource, aircraftCount: d.flights?.length, observationAgeSeconds: (Date.now()-d.aircraftObservedAt)/1000, issues: d.issues }));
+          if (d.aircraftSource !== 'live' || Date.now()-d.aircraftObservedAt > 180000) throw Error('Live aircraft source unavailable or stale');
+          JS
