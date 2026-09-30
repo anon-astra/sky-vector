@@ -12,13 +12,13 @@ A dark radar dashboard covering the **2025 top 20 airports by total passenger tr
 
 No `npm install` is needed. The build only copies static assets. The hosted React and Leaflet distributions, map tiles and AI model need internet access. Keep the repo public for GitHub's public-repository free Pages/standard Actions offering; private-repository plan and Actions limits differ.
 
-## Free AI
+## Cloud AI and the crash fix
 
-Click **Enable free AI**, then **Generate with AI** on a selected flight. Transformers.js 3.8.1 runs **Qwen2.5-0.5B-Instruct** with q4 weights in a dedicated, single-threaded WebAssembly worker. It uses the CPU and does not request WebGPU. The first use downloads hundreds of MB of model weights plus runtime/tokenizer assets, cached when the browser permits. There is no API key, account requirement or per-token service bill.
+Local CPU/GPU model loading has been removed: it could exhaust mobile browser memory and crash the tab. No model weights, inference runtime, WebAssembly or GPU buffers are loaded. The old worker endpoint only reports the migration and cannot allocate a model.
 
-The standard briefing explains weather flags, traffic-score drivers, flight relevance, next checks and data age immediately. **Generate with AI** now runs a real language-model generation pass and produces a new, concise synthesis in its own words. It no longer only chooses or reorders prepared paragraphs. Aircraft data refreshes preserve the generated result for the same selected flight; changing the selection resets it. The AI result identifies its input observation ages.
+The standard evidence-based briefing appears immediately without an account. For generated summaries, select **Connect cloud AI**, sign in with Puter, then **Generate with AI**. Inference runs remotely using Gemini Flash Lite through Puter.js. The selected flight/weather evidence is sent to that provider only when Generate is clicked. Puter provides a limited free account allowance; it may require an upgrade once exhausted. This is not unlimited free AI. No API key or billing credentials are stored in the repository.
 
-Scores remain rule-based. A numerical consistency check rejects invented values and a basic instruction filter rejects flight commands; these checks do not guarantee factual correctness. The output is labeled as an AI-generated draft. Generation failures preserve the explicitly labeled standard briefing.
+AI output is labeled separately and preserved through data refresh. Numeric checks and a basic instruction filter do not guarantee factual accuracy. Failures retain the standard briefing. Disconnect stops accepting results in this page; it does not sign out the user's Puter account or cancel a request already processing remotely.
 
 ## Live observations and GitHub Pages limitations
 
@@ -81,10 +81,11 @@ METAR cannot determine en-route turbulence, runway queues, exact delays or safe 
 - Ranking: https://aci.aero/resources/busiest-airports-in-the-world/
 - Aircraft API: https://openskynetwork.github.io/opensky-api/rest.html
 - METAR API: https://aviationweather.gov/data/api/
-- Transformers.js: https://huggingface.co/docs/transformers.js
+- Puter chat: https://docs.puter.com/AI/chat/
+- Puter free allowance and billing: https://docs.puter.com/user-pays-model/
 - GitHub Pages: https://docs.github.com/en/pages/getting-started-with-github-pages/what-is-github-pages
 - Scheduled Actions: https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#schedule
 
 ## Verification
 
-Automated checks cover airport coverage, positioning, units, independent expiry, METAR ceilings, score bounds, and worker error reporting. Non-scheduled deployments also run Chromium with GPU disabled, download the actual CPU model, generate a briefing, and check the stop/retry controls.
+Tests cover briefing evidence, cloud response handling, cancellation and error recovery. The browser regression test uses a mobile viewport and verifies that no model worker, model download or inference WASM is requested. Cloud response UI tests use an explicit SDK mock; authenticated provider generation requires the user's Puter account and is not claimed as tested by CI.
