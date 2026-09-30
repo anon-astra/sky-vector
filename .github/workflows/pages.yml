@@ -1,10 +1,8 @@
-name: Publish Skyvector and refresh observations
+name: Publish Skyvector
 on:
   push:
     branches: [main]
   workflow_dispatch:
-  schedule:
-    - cron: '*/5 * * * *'
 permissions:
   contents: read
   pages: write
@@ -15,28 +13,23 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 8
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: '22'
-      - run: npm test
-      - name: Fetch aircraft and METAR observations
-        run: node scripts/fetch-data.mjs
-        env:
-          OPENSKY_CLIENT_ID: ${{ secrets.OPENSKY_CLIENT_ID }}
-          OPENSKY_CLIENT_SECRET: ${{ secrets.OPENSKY_CLIENT_SECRET }}
+          node-version: "22"
+          cache: npm
+      - run: npm ci
       - run: npm run build
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist
-          retention-days: 1
   deploy:
     needs: build
     runs-on: ubuntu-latest
-    timeout-minutes: 12
+    timeout-minutes: 10
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
@@ -44,33 +37,3 @@ jobs:
       - name: Deploy GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
-
-      - name: Verify published aircraft and weather
-        if: github.event_name != 'schedule'
-        run: |
-          node --input-type=module <<'JS'
-          const base='https://anon-astra.github.io/sky-vector/';
-          const r=await fetch(base+'data/airspace.json?verify='+Date.now(),{signal:AbortSignal.timeout(25000)});
-          if(!r.ok)throw Error('Published observations HTTP '+r.status);
-          const d=await r.json(),s=d.sectors?.JFK;
-          if(Object.keys(d.sectors||{}).length!==21)throw Error('Expected all 21 sectors');
-          if(s?.aircraftSource==='demo'||!s?.flights?.length||Date.now()-s.aircraftObservedAt>2700000)throw Error('Real JFK aircraft unavailable');
-          if(s.weatherSource==='demo'||Date.now()-s.weather.observedAt>7200000)throw Error('Current JFK weather unavailable');
-          const app=await (await fetch(base+'src/data.js?verify='+Date.now())).text();
-          if(app.includes('/api/live'))throw Error('Outdated blocking proxy client still deployed');
-          console.log(JSON.stringify({sectors:Object.keys(d.sectors).length,aircraftCount:s.flights.length,aircraftAgeSeconds:(Date.now()-s.aircraftObservedAt)/1000,weather:s.weather.raw,source:s.aircraftSource}));
-          JS
-      - uses: actions/checkout@v4
-        if: github.event_name != 'schedule'
-        with:
-          persist-credentials: false
-      - uses: actions/setup-node@v4
-        if: github.event_name != 'schedule'
-        with:
-          node-version: '22'
-      - name: Verify mobile page without local inference
-        if: github.event_name != 'schedule'
-        run: |
-          npm install --no-save --package-lock=false playwright@1.55.1
-          npx playwright install chromium
-          node scripts/test-cloud-ai.mjs

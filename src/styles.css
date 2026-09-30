@@ -1,0 +1,66 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+  --color-bg: #080e13;
+  --color-panel: #10191f;
+  --color-ink: #e4ecee;
+  --color-muted: #879aa6;
+  --color-mint: #a6efd4;
+  --color-mint-dim: #1c3a32;
+  --color-amber: #f3bc72;
+  --color-line: #26343c;
+  --color-inset: #0b141a;
+}
+
+@layer base {
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+  html {
+    -webkit-font-smoothing: antialiased;
+  }
+  body {
+    font-family: var(--font-sans);
+    background: var(--color-bg);
+    color: var(--color-ink);
+  }
+}
+
+.leaflet-container {
+  background: var(--color-inset);
+  font-family: inherit;
+}
+.leaflet-tooltip {
+  background: var(--color-panel);
+  color: var(--color-ink);
+  border: 1px solid var(--color-line);
+  border-radius: 4px;
+  box-shadow: none;
+}
+.leaflet-tooltip-top::before {
+  border-top-color: var(--color-line);
+}
+.leaflet-tooltip-bottom::before {
+  border-bottom-color: var(--color-line);
+}
+.sv-marker {
+  background: transparent !important;
+  border: none !important;
+}
+.leaflet-control-attribution {
+  background: color-mix(in srgb, var(--color-inset) 88%, transparent) !important;
+  color: var(--color-muted) !important;
+  font-size: 10px !important;
+}
+.leaflet-control-attribution a {
+  color: var(--color-mint) !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition: none !important;
+  }
+}
