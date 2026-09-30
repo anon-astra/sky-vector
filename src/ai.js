@@ -39,14 +39,16 @@ export async function summarize(f,d){
  generating=true;
  const baseline=risk(f,d.weather,d.flights);
  const a=briefingAnalysis(f,d,baseline);
- const evidence=Object.values(a.priorities).join(' ')+' Next checks: '+a.checks.join('; ')+'. Data: '+a.quality;
+ const lead=a.priorities[a.lead];
+ const context=a.lead==='C'?a.priorities.A:a.priorities.C;
+ const evidence=lead+' '+context+' Verification: '+a.checks[0]+'. These are delayed or simulated observations. Actual runway queues, delay duration and route weather are unknown.';
  try{
   const text=await request('generate',{messages:[
-   {role:'system',content:'Write a concise dispatcher briefing in your own words using ONLY the evidence supplied. Write one paragraph of three sentences: the main concern, why it matters for this aircraft, then the most useful verification step and uncertainty. Do not list all measurements. Do not invent weather, airport queues, delay minutes, destination or clearances. Do not issue flight instructions. Sector aircraft counts are not runway queues. A METAR is not en-route turbulence evidence. Do not add headings or repeat the source paragraphs verbatim.'},
+   {role:'system',content:'You are a careful editor. Shorten the supplied draft into three sentences in your own words. Keep its main concern, selected-flight relevance, verification step and uncertainty. Use only statements in the draft. Do not add causes, weather phenomena, forecasts, reassurance, flight instructions or measurements. Do not say conditions are normal, safe, clear, or turbulence-free. Return only the rewritten paragraph.'},
    {role:'user',content:evidence}
   ]});
   const summary=checkGeneratedSummary(text,evidence);
-  return {text:summary+'\n\nBased on: '+a.quality+'. AI-generated draft; verify against the observed data. Scores remain rule-based.',source:'Local AI · Qwen 2.5 · CPU',risk:baseline,generatedAt:Date.now()};
+  return {text:summary+'\n\nGenerated '+new Date().toISOString().slice(11,19)+' UTC · Input ages at generation: '+a.quality+'. AI-generated draft; verify against the observed data. Scores remain rule-based.',source:'Local AI · Qwen 2.5 · CPU',risk:baseline,generatedAt:Date.now()};
 
  }finally{generating=false;}
 }

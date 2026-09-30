@@ -15,7 +15,7 @@ self.onmessage=async({data:{id,type,messages}})=>{
    self.postMessage({id,result:true});
   }else if(type==='generate'){
    if(!generator)throw Error('Enable free AI first');
-   const output=await generator(messages,{max_new_tokens:190,do_sample:false,repetition_penalty:1.1});
+   const output=await generator(messages,{max_new_tokens:150,do_sample:false,repetition_penalty:1.1});
    const generated=output[0]?.generated_text;
    const text=typeof generated==='string'?generated:generated?.at(-1)?.content;
    if(typeof text!=='string'||text.trim().length<40)throw Error('The model returned an incomplete summary. Please retry.');

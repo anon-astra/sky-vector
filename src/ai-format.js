@@ -13,5 +13,9 @@ export function checkGeneratedSummary(text,evidence){
  const supplied=numbers(evidence);
  for(const n of numbers(clean))if(!supplied.has(n))throw Error('AI added a number absent from the observations. The evidence-based briefing is retained.');
  if(/\b(?:turn|climb|descend|maintain)\s+(?:left|right|to|heading|flight level|\d)/i.test(clean))throw Error('AI proposed an unsupported flight instruction. The evidence-based briefing is retained.');
+ for(const term of ['inversion','icing','crosswind','windshear','thunderstorm','storm','fog','snow','rain','visibility','ceiling','gust','temperature']){
+  if(new RegExp('\\b'+term,'i').test(clean)&&!new RegExp('\\b'+term,'i').test(evidence))throw Error('AI introduced an unsupported condition. The evidence-based briefing is retained.');
+ }
+ if(/normal conditions|minimal adverse|safe to|no (?:significant )?turbulence/i.test(clean))throw Error('AI added an unsupported reassurance. The evidence-based briefing is retained.');
  return clean;
 }
