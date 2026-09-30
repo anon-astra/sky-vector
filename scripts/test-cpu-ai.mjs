@@ -9,11 +9,16 @@ try{
  await page.getByRole('button',{name:'Enable free AI',exact:true}).click();
  console.log('Loading real model with GPU disabled');
  await page.waitForFunction(()=>document.querySelector('.ai-controls p')?.textContent.includes('CPU AI is ready'),{},{timeout:480000});
+ const before=await page.locator('.briefing p').innerText();
  await page.getByRole('button',{name:'Generate with AI',exact:true}).click();
- await page.waitForFunction(()=>document.querySelector('.briefing .source')?.textContent.includes('Local AI · SmolLM2 · CPU'),{},{timeout:180000});
+ await page.waitForFunction(()=>document.querySelector('.briefing .source')?.textContent.includes('Local AI · Qwen 2.5 · CPU'),{},{timeout:300000});
  const briefing=await page.locator('.briefing p').innerText();
- if(!briefing.includes('Flight relevance:')||!briefing.includes('Next checks')||!briefing.includes('Data confidence'))throw Error('Missing contextual briefing sections');
+ if(briefing===before||briefing.includes('Next checks\n')||!briefing.includes('AI-generated draft'))throw Error('AI did not generate a distinct summary');
  console.log('CPU AI GENERATED:',briefing);
+ await page.getByRole('button',{name:'Refresh sector',exact:true}).click();
+ await page.waitForFunction(()=>!document.querySelector('button[aria-label="Refresh sector"]')?.disabled);
+ if(await page.locator('.briefing p').innerText()!==briefing)throw Error('Refresh replaced the AI summary');
+ console.log('AI summary survived data refresh');
  await page.getByRole('button',{name:'Stop AI',exact:true}).click();
  await page.getByRole('button',{name:'Enable free AI',exact:true}).waitFor();
  console.log('CPU model load, actual generation, and stop/retry UI passed');

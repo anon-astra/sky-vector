@@ -1,9 +1,10 @@
 import {risk} from './core.js';
-import {summaryFacts,composeBriefing} from './briefing.js';
+import {briefingAnalysis} from './briefing.js';
+import {checkGeneratedSummary} from './ai-format.js';
 import {aiErrorMessage} from './ai-format.js';
 let worker=null,ready=false,loading=null,generating=false,sequence=0;
 const pending=new Map();
-function request(type,payload={},progress,timeout=180000){
+function request(type,payload={},progress,timeout=300000){
  return new Promise((resolve,reject)=>{
   const id=++sequence;
   const timer=setTimeout(()=>{stopAI('AI operation timed out. Reload the model and retry.');},timeout);
@@ -37,12 +38,15 @@ export async function summarize(f,d){
  if(generating)throw Error('AI is finishing another request');
  generating=true;
  const baseline=risk(f,d.weather,d.flights);
- const facts=summaryFacts(d,baseline,f);
+ const a=briefingAnalysis(f,d,baseline);
+ const evidence=Object.values(a.priorities).join(' ')+' Next checks: '+a.checks.join('; ')+'. Data: '+a.quality;
  try{
-  const choice=await request('generate',{messages:[
-   {role:'system',content:'Select which supplied observation should lead a short briefing. Reply with exactly A for weather, B for traffic density, or C for flight-specific relevance. Choose only from the supplied facts.'},
-   {role:'user',content:`A: ${facts.A} Weather index ${baseline.weather}/100. B: ${facts.B} Traffic index ${baseline.congestion}/100. C: ${facts.C}`}
+  const text=await request('generate',{messages:[
+   {role:'system',content:'Write a concise dispatcher briefing in your own words using ONLY the evidence supplied. Write one paragraph of three sentences: the main concern, why it matters for this aircraft, then the most useful verification step and uncertainty. Do not list all measurements. Do not invent weather, airport queues, delay minutes, destination or clearances. Do not issue flight instructions. Sector aircraft counts are not runway queues. A METAR is not en-route turbulence evidence. Do not add headings or repeat the source paragraphs verbatim.'},
+   {role:'user',content:evidence}
   ]});
-  return {text:composeBriefing(f,d,baseline,choice),source:'Local AI · SmolLM2 · CPU',risk:baseline};
+  const summary=checkGeneratedSummary(text,evidence);
+  return {text:summary+'\n\nBased on: '+a.quality+'. AI-generated draft; verify against the observed data. Scores remain rule-based.',source:'Local AI · Qwen 2.5 · CPU',risk:baseline,generatedAt:Date.now()};
+
  }finally{generating=false;}
 }
